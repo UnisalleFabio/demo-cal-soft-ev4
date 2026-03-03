@@ -1,0 +1,37 @@
+name: Brecha de prueba
+description: Registrar una funcionalidad o escenario que todavia no tiene cobertura suficiente.
+title: "[TEST-GAP] "
+labels:
+  - testing
+  - gap
+body:
+  - type: input
+    id: requirement
+    attributes:
+      label: Funcionalidad o requisito
+      placeholder: Expiracion visible del token de recuperacion
+    validations:
+      required: true
+  - type: dropdown
+    id: test_type
+    attributes:
+      label: Tipo de prueba faltante
+      options:
+        - unitaria
+        - funcional
+        - integrada
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Riesgo asociado
+      placeholder: El usuario no sabe si el enlace sigue siendo valido y el soporte recibe mas incidencias.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Propuesta de cobertura
+      placeholder: Agregar caso funcional F-04 para validar mensaje de expiracion.
+

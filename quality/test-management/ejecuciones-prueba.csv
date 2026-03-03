@@ -1,0 +1,8 @@
+run_id,case_id,estado,resultado_real,observaciones,evidencia
+RUN-01,U-01,passed,La politica rechazo la clave corta sin actualizar datos,Comportamiento esperado,tests/test_unit_password_policy.py
+RUN-01,U-02,passed,El token vencido fue rechazado correctamente,Sin novedad,tests/test_unit_token_service.py
+RUN-01,F-01,passed,Se genero y envio el enlace de recuperacion,Flujo basico estable,tests/test_functional_password_reset.py
+RUN-01,F-02,failed,El mensaje no informa la expiracion del enlace,Crear issue INC-01,quality/github-issues/INC-01-fecha-expiracion.md
+RUN-01,F-03,failed,El rechazo del token usado no orienta claramente al usuario,Crear issue INC-03,quality/github-issues/INC-03-token-usado.md
+RUN-01,I-01,passed,La contrasena se actualizo y se registro auditoria,Sin novedad,tests/test_integration_password_reset_service.py
+RUN-01,I-02,failed,No existe limite de intentos fallidos,Crear issue INC-02,quality/github-issues/INC-02-intentos-fallidos.md

@@ -1,0 +1,64 @@
+name: Reporte de defecto
+description: Registrar un defecto encontrado en el modulo de recuperacion de contrasena.
+title: "[BUG] "
+labels:
+  - bug
+  - calidad
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Resumen
+      description: Describa el defecto en una sola frase.
+      placeholder: El token puede reutilizarse despues del cambio de contrasena
+    validations:
+      required: true
+  - type: dropdown
+    id: module
+    attributes:
+      label: Modulo afectado
+      options:
+        - token_service
+        - reset_service
+        - notifier
+        - audit
+        - password_policy
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidad
+      options:
+        - baja
+        - media
+        - alta
+        - critica
+    validations:
+      required: true
+  - type: input
+    id: test_case
+    attributes:
+      label: Caso de prueba asociado
+      placeholder: I-01
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+      placeholder: El sistema debe invalidar el token despues del primer uso.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado actual
+      placeholder: El token sigue siendo aceptado en un segundo intento.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidencia
+      description: Pegue logs, trazas, capturas o referencias a archivos.
+      placeholder: tests/test_integration_password_reset_service.py
+
