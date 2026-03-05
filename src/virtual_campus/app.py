@@ -18,7 +18,7 @@ def build_demo_environment(now_fn=None) -> dict[str, object]:
 
     user_repository.save(
         User(
-            email="estudiantes@lasalle.edu.co",
+            email="estudiante@lasalle.edu.co",
             password_hash=hash_password("ClaveInicial123!"),
         )
     )
