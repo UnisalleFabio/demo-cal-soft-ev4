@@ -50,8 +50,9 @@ de `build`.
 
 ### Build
 
-- `ubuntu-executable`: incluye el binario `dist/ejemplo-recuperacion-contrasena`
-  y un empaquetado `dist/ejemplo-recuperacion-contrasena-linux.tar.gz`.
+- `ubuntu-executable`: incluye el empaquetado
+  `dist/ejemplo-recuperacion-contrasena-linux.tar.gz`, que conserva el
+  ejecutable Linux generado en `dist/ejemplo-recuperacion-contrasena`.
 
 ### Pruebas
 

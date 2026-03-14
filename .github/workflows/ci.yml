@@ -8,6 +8,7 @@ jobs:
   build:
     name: Build ejecutable Ubuntu
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -34,9 +35,8 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: ubuntu-executable
-          path: |
-            dist/ejemplo-recuperacion-contrasena
-            dist/ejemplo-recuperacion-contrasena-linux.tar.gz
+          path: dist/ejemplo-recuperacion-contrasena-linux.tar.gz
+          compression-level: 0
 
       - name: Notify build success
         if: steps.build_binary.outcome == 'success'
