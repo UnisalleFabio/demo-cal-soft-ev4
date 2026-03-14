@@ -14,6 +14,7 @@ El proyecto no depende de una base de datos ni de servicios externos. Todo el fl
 - restablecimiento de contraseña
 - registro de auditoría del flujo
 - pruebas unitarias, funcionales e integradas
+- ejemplos de pruebas no funcionales de carga, usabilidad y seguridad
 - artefactos de calidad para seguimiento y mejora
 - automatización con GitHub Actions
 - plantillas para registrar incidencias y brechas de prueba en GitHub Issues
@@ -43,6 +44,13 @@ El script muestra un recorrido completo:
 python3 -m unittest discover -s tests -v
 ```
 
+El repositorio también incluye ejemplos no funcionales en
+`tests/test_non_functional_examples.py`. Si quieres correr solo esos casos:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_non_functional_examples.py' -v
+```
+
 Si también quieres revisar cobertura:
 
 ```bash
@@ -51,6 +59,17 @@ coverage run -m unittest discover -s tests -v
 coverage report -m
 coverage xml
 ```
+
+## Ejemplos de pruebas no funcionales
+
+La suite agrega un archivo con ejemplos sencillos y ejecutables para clase:
+
+- carga ligera sobre `200` flujos completos en memoria
+- usabilidad centrada en claridad de mensajes y pasos del proceso
+- seguridad centrada en expiración, no reutilización y auditoría del token
+
+La explicación de alcance y límites está en
+[`quality/non-functional/README.md`](quality/non-functional/README.md).
 
 ## Cómo usar este repositorio si eres estudiante
 
