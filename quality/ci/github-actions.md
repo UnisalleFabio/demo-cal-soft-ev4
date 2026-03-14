@@ -3,166 +3,147 @@
 Documentación del pipeline de integración continua (CI) del proyecto
 **ejemplo-recuperacion-contraseña**.
 
-## Qué es GitHub Actions
+## Qué hace ahora el workflow
 
-GitHub Actions es el servicio de CI/CD integrado en GitHub. Permite ejecutar
-flujos de trabajo automatizados (workflows) en respuesta a eventos del
-repositorio como `push`, `pull_request`, creación de tags, etc.
-
-En este proyecto se usa para:
-
-- Ejecutar automáticamente todas las pruebas en cada cambio
-- Medir la cobertura de código
-- Generar y almacenar el reporte de cobertura como artefacto
-
-## Workflow actual
-
-El archivo de configuración se encuentra en
+El archivo de configuración está en
 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml).
 
-### Cuándo se ejecuta
+El flujo se ejecuta en cada `push` y en cada `pull_request`, y quedó dividido
+en jobs separados para que la evidencia sea más clara en clase.
 
-```yaml
-on:
-  push:
-  pull_request:
-```
+## Jobs del pipeline
 
-Se activa en **cada push** a cualquier rama y en **cada pull request**.
+| Job | Propósito | Resultado principal |
+|---|---|---|
+| `build` | Genera un ejecutable para Ubuntu con `PyInstaller`. | Artefacto `ubuntu-executable` |
+| `unit_tests` | Ejecuta las pruebas unitarias. | Artefacto `unit-test-results` |
+| `integration_tests` | Ejecuta las pruebas de integración. | Artefacto `integration-test-results` |
+| `functional_tests` | Ejecuta las pruebas funcionales. | Artefacto `functional-test-results` |
+| `non_functional_tests` | Ejecuta las pruebas no funcionales. | Artefacto `non-functional-test-results` |
+| `coverage` | Ejecuta la suite completa con cobertura. | Artefacto `coverage-xml` |
+| `pipeline_ok` | Publica una notificación final cuando todo terminó bien. | Resumen final en `Actions` |
 
-### Qué hace paso a paso
+## Orden del flujo
 
-| Paso | Acción | Descripción |
-|:----:|--------|-------------|
-| 1 | `actions/checkout@v4` | Descarga el código del repositorio |
-| 2 | `actions/setup-python@v5` | Configura Python 3.12 en el runner |
-| 3 | `pip install coverage` | Instala la herramienta de cobertura |
-| 4 | `coverage run -m unittest discover` | Ejecuta todas las pruebas (unitarias, integración y funcionales) midiendo cobertura |
-| 5 | `coverage report -m` | Muestra el reporte de cobertura en consola |
-| 6 | `coverage xml` | Genera `coverage.xml` para herramientas externas |
-| 7 | `actions/upload-artifact@v4` | Sube `coverage.xml` como artefacto descargable |
-
-### Diagrama del flujo
-
-```
+```text
 push / pull_request
-       │
-       ▼
-  ┌──────────┐
-  │ Checkout  │
-  └────┬─────┘
-       ▼
-  ┌──────────────┐
-  │ Setup Python │
-  │    3.12      │
-  └────┬─────────┘
-       ▼
-  ┌──────────────────┐
-  │ Install coverage │
-  └────┬─────────────┘
-       ▼
-  ┌───────────────────────────┐
-  │ Run tests con cobertura   │
-  │ unittest discover -s tests│
-  └────┬──────────────────────┘
-       ▼
-  ┌──────────────────┐
-  │ Coverage report  │
-  └────┬─────────────┘
-       ▼
-  ┌──────────────────┐
-  │ Coverage XML     │
-  └────┬─────────────┘
-       ▼
-  ┌──────────────────────┐
-  │ Upload artifact      │
-  │ (coverage.xml)       │
-  └──────────────────────┘
+        |
+        v
+      build
+        |
+        +--> unit_tests
+        +--> integration_tests
+        +--> functional_tests
+        +--> non_functional_tests
+                    |
+                    v
+                 coverage
+                    |
+                    v
+                pipeline_ok
 ```
 
-## Cómo ver los resultados
+Si el job `build` falla, los jobs de pruebas no continúan porque todos dependen
+de `build`.
 
-1. Ir al repositorio en GitHub: `https://github.com/UnisalleFabio/demo-cal-soft-ev4`
-2. Hacer clic en la pestaña **Actions**
-3. Seleccionar la ejecución (run) que se quiere revisar
-4. Hacer clic en el job **test** para ver el log de cada paso
+## Artefactos que publica GitHub Actions
 
-### Indicadores de estado
+### Build
 
-| Icono | Significado |
-|:-----:|-------------|
-| ✅ | Todas las pruebas pasaron |
-| ❌ | Al menos una prueba falló o hubo un error |
-| 🟡 | La ejecución está en progreso |
+- `ubuntu-executable`: incluye el binario `dist/ejemplo-recuperacion-contrasena`
+  y un empaquetado `dist/ejemplo-recuperacion-contrasena-linux.tar.gz`.
 
-## Cómo descargar el artefacto de cobertura
+### Pruebas
 
-1. En la pestaña **Actions**, seleccionar una ejecución completada
-2. En la sección **Artifacts** (parte inferior), hacer clic en **coverage-xml**
-3. Se descarga un `.zip` que contiene `coverage.xml`
+Cada suite publica un archivo JSON con el resumen de la ejecución:
 
-Este archivo se puede usar con herramientas como:
+- `unit-test-results`
+- `integration-test-results`
+- `functional-test-results`
+- `non-functional-test-results`
 
-- **SonarQube** para análisis de calidad
-- **Codecov** o **Coveralls** para reportes visuales de cobertura
-- Cualquier herramienta que soporte el formato Cobertura XML
+Cada JSON deja evidencia de:
 
-## Cómo ejecutar el CI localmente
+- cuántas pruebas se ejecutaron;
+- cuántas aprobaron;
+- cuántos fallos y errores hubo;
+- si la suite fue exitosa o no.
 
-Para replicar lo que hace el CI en tu máquina local:
+### Cobertura
+
+- `coverage-xml`: contiene `coverage.xml`, útil para herramientas externas como
+  SonarQube, Codecov o Coveralls.
+
+## Cómo se notifican los estados
+
+El workflow usa dos mecanismos simples de notificación dentro de GitHub Actions:
+
+- mensajes `::notice::` cuando una etapa termina correctamente;
+- mensajes `::error::` cuando una etapa falla;
+- resúmenes escritos en `GITHUB_STEP_SUMMARY` para que cada job deje evidencia
+  fácil de leer.
+
+Además, el job `pipeline_ok` deja una notificación final cuando el build, las
+cuatro suites y la cobertura terminan sin errores.
+
+## Dónde ver logs y resultados
+
+1. Abrir el repositorio en GitHub.
+2. Entrar en la pestaña **Actions**.
+3. Seleccionar una ejecución del workflow.
+4. Abrir el job que quieres revisar.
+5. Entrar a cada step para ver el log detallado.
+
+En la misma ejecución puedes revisar:
+
+- la sección **Artifacts** para descargar binarios y resúmenes;
+- la pestaña o bloque de **Summary** para leer las notificaciones de cada job.
+
+## Cómo ejecutar algo parecido localmente en Ubuntu
+
+### Build del ejecutable
 
 ```bash
-# Con Python 3.12+ (Linux/Mac)
+python3 -m pip install --upgrade pip pyinstaller
+pyinstaller --onefile --name ejemplo-recuperacion-contrasena run_example.py
+```
+
+El binario quedará en:
+
+```text
+dist/ejemplo-recuperacion-contrasena
+```
+
+### Ejecución por suite
+
+```bash
+python3 scripts/run_unittest_suite.py \
+  --suite-name "pruebas unitarias" \
+  --pattern "test_unit*.py" \
+  --results-file "artifacts/unit-test-results.json"
+```
+
+Puedes cambiar el patrón para las demás suites:
+
+- `test_integration*.py`
+- `test_functional*.py`
+- `test_non_functional*.py`
+
+### Cobertura
+
+```bash
 python3 -m pip install --upgrade pip coverage
 coverage run -m unittest discover -s tests -v
 coverage report -m
 coverage xml
 ```
 
-```powershell
-# Con Python 3.13 (Windows)
-py -3.13 -m pip install --upgrade pip coverage
-py -3.13 -m coverage run -m unittest discover -s tests -v
-py -3.13 -m coverage report -m
-py -3.13 -m coverage xml
-```
+## Script auxiliar usado por el CI
 
-## Estructura del archivo ci.yml
+El archivo [`scripts/run_unittest_suite.py`](../../scripts/run_unittest_suite.py)
+ejecuta una suite `unittest`, guarda un resumen en JSON y expone totales a
+GitHub Actions para que el workflow pueda:
 
-```yaml
-name: ejemplo-recuperacion-contrasena-ci    # Nombre del workflow
-
-on:
-  push:                                      # Se ejecuta en cada push
-  pull_request:                              # Se ejecuta en cada PR
-
-jobs:
-  test:                                      # Nombre del job
-    runs-on: ubuntu-latest                   # Sistema operativo del runner
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4            # Clona el repositorio
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"             # Versión de Python
-
-      - name: Install tooling
-        run: python -m pip install --upgrade pip coverage
-
-      - name: Run unit, functional and integration tests
-        run: coverage run -m unittest discover -s tests -v
-
-      - name: Show coverage report
-        run: coverage report -m
-
-      - name: Export coverage xml
-        run: coverage xml
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-xml
-          path: coverage.xml                 # Archivo que se sube
-```
+- notificar cuántas pruebas pasaron;
+- subir un artefacto por suite;
+- fallar el job si la suite falla o si no se descubre ninguna prueba.

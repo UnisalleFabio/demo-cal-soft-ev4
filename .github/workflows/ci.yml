@@ -5,7 +5,8 @@ on:
   pull_request:
 
 jobs:
-  test:
+  build:
+    name: Build ejecutable Ubuntu
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,21 +17,344 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install tooling
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip pyinstaller
+
+      - name: Build Linux executable
+        id: build_binary
+        continue-on-error: true
+        run: pyinstaller --onefile --name ejemplo-recuperacion-contrasena run_example.py
+
+      - name: Pack Linux executable
+        if: steps.build_binary.outcome == 'success'
+        run: tar -czf dist/ejemplo-recuperacion-contrasena-linux.tar.gz -C dist ejemplo-recuperacion-contrasena
+
+      - name: Upload executable artifact
+        if: steps.build_binary.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-executable
+          path: |
+            dist/ejemplo-recuperacion-contrasena
+            dist/ejemplo-recuperacion-contrasena-linux.tar.gz
+
+      - name: Notify build success
+        if: steps.build_binary.outcome == 'success'
+        run: |
+          echo "::notice::El build del ejecutable para Ubuntu finalizó correctamente."
+          {
+            echo "## Build"
+            echo "- Estado: correcto"
+            echo "- Artefacto: ubuntu-executable"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify build failure
+        if: steps.build_binary.outcome != 'success'
+        run: |
+          echo "::error::El build del ejecutable para Ubuntu falló. El pipeline no continuará con las pruebas."
+          {
+            echo "## Build"
+            echo "- Estado: fallido"
+            echo "- El ejecutable para Ubuntu no pudo generarse."
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  unit_tests:
+    name: Pruebas unitarias
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.run_tests.outputs.passed }}
+      ran: ${{ steps.run_tests.outputs.ran }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run unit tests
+        id: run_tests
+        continue-on-error: true
+        run: |
+          python scripts/run_unittest_suite.py \
+            --suite-name "pruebas unitarias" \
+            --pattern "test_unit*.py" \
+            --results-file "artifacts/unit-test-results.json"
+
+      - name: Upload unit test artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: artifacts/unit-test-results.json
+
+      - name: Notify unit test success
+        if: steps.run_tests.outcome == 'success'
+        run: |
+          echo "::notice::Pruebas unitarias exitosas: ${{ steps.run_tests.outputs.passed }} de ${{ steps.run_tests.outputs.ran }} aprobaron."
+          {
+            echo "## Pruebas unitarias"
+            echo "- Estado: correcto"
+            echo "- Resultado: ${{ steps.run_tests.outputs.passed }}/${{ steps.run_tests.outputs.ran }} aprobadas"
+            echo "- Artefacto: unit-test-results"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify unit test failure
+        if: steps.run_tests.outcome != 'success'
+        run: |
+          echo "::error::Pruebas unitarias fallidas: ${{ steps.run_tests.outputs.passed }} de ${{ steps.run_tests.outputs.ran }} aprobaron."
+          {
+            echo "## Pruebas unitarias"
+            echo "- Estado: fallido"
+            echo "- Resultado: ${{ steps.run_tests.outputs.passed }}/${{ steps.run_tests.outputs.ran }} aprobadas"
+            echo "- Artefacto: unit-test-results"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  integration_tests:
+    name: Pruebas de integración
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.run_tests.outputs.passed }}
+      ran: ${{ steps.run_tests.outputs.ran }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run integration tests
+        id: run_tests
+        continue-on-error: true
+        run: |
+          python scripts/run_unittest_suite.py \
+            --suite-name "pruebas de integración" \
+            --pattern "test_integration*.py" \
+            --results-file "artifacts/integration-test-results.json"
+
+      - name: Upload integration test artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: artifacts/integration-test-results.json
+
+      - name: Notify integration test success
+        if: steps.run_tests.outcome == 'success'
+        run: |
+          echo "::notice::Pruebas de integración exitosas: ${{ steps.run_tests.outputs.passed }} de ${{ steps.run_tests.outputs.ran }} aprobaron."
+          {
+            echo "## Pruebas de integración"
+            echo "- Estado: correcto"
+            echo "- Resultado: ${{ steps.run_tests.outputs.passed }}/${{ steps.run_tests.outputs.ran }} aprobadas"
+            echo "- Artefacto: integration-test-results"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify integration test failure
+        if: steps.run_tests.outcome != 'success'
+        run: |
+          echo "::error::Pruebas de integración fallidas: ${{ steps.run_tests.outputs.passed }} de ${{ steps.run_tests.outputs.ran }} aprobaron."
+          {
+            echo "## Pruebas de integración"
+            echo "- Estado: fallido"
+            echo "- Resultado: ${{ steps.run_tests.outputs.passed }}/${{ steps.run_tests.outputs.ran }} aprobadas"
+            echo "- Artefacto: integration-test-results"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  functional_tests:
+    name: Pruebas funcionales
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.run_tests.outputs.passed }}
+      ran: ${{ steps.run_tests.outputs.ran }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run functional tests
+        id: run_tests
+        continue-on-error: true
+        run: |
+          python scripts/run_unittest_suite.py \
+            --suite-name "pruebas funcionales" \
+            --pattern "test_functional*.py" \
+            --results-file "artifacts/functional-test-results.json"
+
+      - name: Upload functional test artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: functional-test-results
+          path: artifacts/functional-test-results.json
+
+      - name: Notify functional test success
+        if: steps.run_tests.outcome == 'success'
+        run: |
+          echo "::notice::Pruebas funcionales exitosas: ${{ steps.run_tests.outputs.passed }} de ${{ steps.run_tests.outputs.ran }} aprobaron."
+          {
+            echo "## Pruebas funcionales"
+            echo "- Estado: correcto"
+            echo "- Resultado: ${{ steps.run_tests.outputs.passed }}/${{ steps.run_tests.outputs.ran }} aprobadas"
+            echo "- Artefacto: functional-test-results"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify functional test failure
+        if: steps.run_tests.outcome != 'success'
+        run: |
+          echo "::error::Pruebas funcionales fallidas: ${{ steps.run_tests.outputs.passed }} de ${{ steps.run_tests.outputs.ran }} aprobaron."
+          {
+            echo "## Pruebas funcionales"
+            echo "- Estado: fallido"
+            echo "- Resultado: ${{ steps.run_tests.outputs.passed }}/${{ steps.run_tests.outputs.ran }} aprobadas"
+            echo "- Artefacto: functional-test-results"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  non_functional_tests:
+    name: Pruebas no funcionales
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.run_tests.outputs.passed }}
+      ran: ${{ steps.run_tests.outputs.ran }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run non-functional tests
+        id: run_tests
+        continue-on-error: true
+        run: |
+          python scripts/run_unittest_suite.py \
+            --suite-name "pruebas no funcionales" \
+            --pattern "test_non_functional*.py" \
+            --results-file "artifacts/non-functional-test-results.json"
+
+      - name: Upload non-functional test artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: non-functional-test-results
+          path: artifacts/non-functional-test-results.json
+
+      - name: Notify non-functional test success
+        if: steps.run_tests.outcome == 'success'
+        run: |
+          echo "::notice::Pruebas no funcionales exitosas: ${{ steps.run_tests.outputs.passed }} de ${{ steps.run_tests.outputs.ran }} aprobaron."
+          {
+            echo "## Pruebas no funcionales"
+            echo "- Estado: correcto"
+            echo "- Resultado: ${{ steps.run_tests.outputs.passed }}/${{ steps.run_tests.outputs.ran }} aprobadas"
+            echo "- Artefacto: non-functional-test-results"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify non-functional test failure
+        if: steps.run_tests.outcome != 'success'
+        run: |
+          echo "::error::Pruebas no funcionales fallidas: ${{ steps.run_tests.outputs.passed }} de ${{ steps.run_tests.outputs.ran }} aprobaron."
+          {
+            echo "## Pruebas no funcionales"
+            echo "- Estado: fallido"
+            echo "- Resultado: ${{ steps.run_tests.outputs.passed }}/${{ steps.run_tests.outputs.ran }} aprobadas"
+            echo "- Artefacto: non-functional-test-results"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  coverage:
+    name: Cobertura
+    needs:
+      - unit_tests
+      - integration_tests
+      - functional_tests
+      - non_functional_tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install coverage
         run: python -m pip install --upgrade pip coverage
 
-      - name: Run unit, functional and integration tests
-        run: coverage run -m unittest discover -s tests -v
-
-      - name: Show coverage report
-        run: coverage report -m
-
-      - name: Export coverage xml
-        run: coverage xml
+      - name: Run coverage
+        id: run_coverage
+        continue-on-error: true
+        run: |
+          coverage run -m unittest discover -s tests -v
+          coverage report -m
+          coverage xml
 
       - name: Upload coverage artifact
+        if: steps.run_coverage.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-xml
           path: coverage.xml
 
+      - name: Notify coverage success
+        if: steps.run_coverage.outcome == 'success'
+        run: |
+          echo "::notice::Cobertura generada correctamente."
+          {
+            echo "## Cobertura"
+            echo "- Estado: correcto"
+            echo "- Artefacto: coverage-xml"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Notify coverage failure
+        if: steps.run_coverage.outcome != 'success'
+        run: |
+          echo "::error::La etapa de cobertura falló."
+          {
+            echo "## Cobertura"
+            echo "- Estado: fallido"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  pipeline_ok:
+    name: Pipeline OK
+    needs:
+      - build
+      - unit_tests
+      - integration_tests
+      - functional_tests
+      - non_functional_tests
+      - coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Final success notification
+        run: |
+          echo "::notice::Pipeline completado correctamente. Build, pruebas y cobertura finalizaron sin errores."
+          {
+            echo "# Pipeline completado"
+            echo "- Build: OK"
+            echo "- Pruebas unitarias: ${{ needs.unit_tests.outputs.passed }}/${{ needs.unit_tests.outputs.ran }}"
+            echo "- Pruebas de integración: ${{ needs.integration_tests.outputs.passed }}/${{ needs.integration_tests.outputs.ran }}"
+            echo "- Pruebas funcionales: ${{ needs.functional_tests.outputs.passed }}/${{ needs.functional_tests.outputs.ran }}"
+            echo "- Pruebas no funcionales: ${{ needs.non_functional_tests.outputs.passed }}/${{ needs.non_functional_tests.outputs.ran }}"
+            echo "- Cobertura: OK"
+            echo "- Artefactos: ubuntu-executable, unit-test-results, integration-test-results, functional-test-results, non-functional-test-results, coverage-xml"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -106,11 +106,11 @@ El archivo [`.github/pull_request_template.md`](.github/pull_request_template.md
 
 El workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) queda listo para ejecutarse en GitHub cuando publiques este directorio como repositorio independiente. La automatización:
 
-- instala `coverage`
-- ejecuta la suite completa
-- imprime el reporte de cobertura
-- genera `coverage.xml`
-- publica `coverage.xml` como artefacto del workflow
+- genera un ejecutable para Ubuntu con `PyInstaller`
+- detiene el flujo si el build falla
+- ejecuta por separado pruebas unitarias, de integración, funcionales y no funcionales
+- publica un artefacto JSON con el resumen de cada suite
+- genera `coverage.xml` como evidencia técnica adicional
 
 ## Flujo sugerido en GitHub
 
@@ -127,6 +127,7 @@ Si publicas este proyecto en GitHub, una dinámica simple para la clase o para t
 
 - [`src/virtual_campus/`](src/virtual_campus/): código fuente del módulo
 - [`tests/`](tests/): pruebas unitarias, funcionales e integradas
+- [`scripts/`](scripts/): utilidades para CI y automatización local
 - [`quality/`](quality/): evidencias, seguimiento, checklist y mejora continua
 - [`.github/`](.github/): integración con GitHub Issues, Pull Requests y Actions
 - [`run_example.py`](run_example.py): ejecución guiada del flujo principal
@@ -138,6 +139,7 @@ Si quieres profundizar en el trabajo de calidad del ejemplo, revisa estos archiv
 - [`quality/metricas-y-seguimiento.md`](quality/metricas-y-seguimiento.md)
 - [`quality/checklist-revision-codigo.md`](quality/checklist-revision-codigo.md)
 - [`quality/plan-mejora-continua.md`](quality/plan-mejora-continua.md)
+- [`quality/ci/github-actions.md`](quality/ci/github-actions.md)
 - [`quality/test-management/README.md`](quality/test-management/README.md)
 - [`quality/github-issues/README.md`](quality/github-issues/README.md)
 - [`CONTRIBUTING.md`](CONTRIBUTING.md)
