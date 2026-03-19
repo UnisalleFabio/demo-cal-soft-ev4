@@ -16,7 +16,7 @@ def main() -> None:
     notifier = environment["notifier"]
     audit_log = environment["audit_log"]
 
-    print("== Solicitud de recuperacion ==")
+    print("== Solicitud de recuperacion V1.0 ==")
     request_result = service.request_password_reset("estudiante@lasalle.edu.co")
     print(request_result.message)
 
