@@ -37,7 +37,7 @@ class TokenServiceTests(unittest.TestCase):
             used=True,
         )
 
-        self.assertFalse(service.is_valid(used, "abc123"))
+        self.assertFalse(service.is_valid(used, "abc1234"))
 
 
 if __name__ == "__main__":
